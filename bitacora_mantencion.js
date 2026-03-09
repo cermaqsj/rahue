@@ -24,8 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
         fechaInput.value = `${yyyy}-${mm}-${dd}`;
     }
 
-    // Hide install button immediately if app is already running in standalone mode (installed PWA)
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+    // Show install button immediately if app is NOT running in standalone mode (installed PWA)
+    if (!window.matchMedia('(display-mode: standalone)').matches && window.navigator.standalone !== true) {
+        const installBtn = document.getElementById('btn-install-pwa');
+        if (installBtn) installBtn.style.display = 'flex';
+    } else {
         const installBtn = document.getElementById('btn-install-pwa');
         if (installBtn) installBtn.style.display = 'none';
     }
@@ -144,7 +147,16 @@ async function submitMaintenanceLog() {
     const workerInput = document.getElementById('maint-worker');
     const worker = workerInput.value.trim();
     const fechaInput = document.getElementById('maint-fecha');
-    const fecha = fechaInput ? fechaInput.value : '';
+    let fecha = fechaInput ? fechaInput.value : '';
+
+    // Anexar la hora exacta del dispositivo a la fecha seleccionada
+    if (fecha) {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const sec = String(now.getSeconds()).padStart(2, '0');
+        fecha = `${fecha}T${hh}:${min}:${sec}`;
+    }
     const submitBtn = document.getElementById('btn-maint-submit');
 
     // Auto-add current input if not empty
@@ -261,12 +273,17 @@ async function loadHistory() {
         const qs = getOfflineQueue();
         if (qs.length > 0) {
             list.innerHTML = `<div style="text-align:center; padding:10px; color:var(--text-light); font-size: 0.8rem;">Estás offline. Tienes ${qs.length} reportes en cola local listos para enviarse al reconectar.</div>`;
-            renderHistory(qs.map((p, i) => ({
-                id: `COLA-${i + 1}`,
-                date: p.fecha_trabajo || new Date().toISOString().split('T')[0],
-                worker: p.worker,
-                task: p.tasks.join(', ')
-            })));
+            renderHistory(qs.map((p, i) => {
+                let displayDate = p.fecha_trabajo || new Date().toISOString();
+                // Limpiar la 'T' para mostrarla más bonita offline si es que la trae
+                displayDate = displayDate.replace('T', ' ');
+                return {
+                    id: `COLA-${i + 1}`,
+                    date: displayDate,
+                    worker: p.worker,
+                    task: p.tasks.join(', ')
+                };
+            }));
         } else {
             list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-light);">Estás offline. No hay registros pendientes en cola.</div>';
         }
@@ -300,6 +317,7 @@ function renderHistory(logs) {
     logs.forEach(log => {
         let dateStr = log.date;
         try {
+            // Reemplazar la T por espacio o formatearla bonito si es válido
             const d = new Date(log.date);
             if (!isNaN(d.getTime())) {
                 dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -517,6 +535,8 @@ async function installPWA() {
             console.log('El usuario rechazó instalar la PWA');
         }
         deferredPrompt = null;
+    } else {
+        showToast("Toca Compartir / Menú en tu navegador y elige 'Agregar a inicio' para instalar.", "info");
     }
 }
 

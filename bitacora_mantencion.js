@@ -175,7 +175,6 @@ async function submitMaintenanceLog() {
         submitBtn.innerHTML = '<span class="material-icons-round spin">sync</span> Enviando...';
     }
 
-    // Payload
     const payload = {
         action: 'MAINTENANCE_LOG',
         worker: worker,
@@ -183,7 +182,15 @@ async function submitMaintenanceLog() {
         tasks: taskBatch
     };
 
-    console.log("Enviando reporte:", payload);
+    // --- MANEJO OFFLINE PRIMER CONTROL ---
+    if (!navigator.onLine) {
+        saveToOfflineQueue(payload);
+        showToast("Sin conexión. Reporte guardado para enviar luego en caché local.", "warning");
+        taskBatch = [];
+        renderTaskBatch();
+        resetSubmitBtn(submitBtn);
+        return;
+    }
 
     try {
         const result = await sendTransaction(payload);
@@ -192,17 +199,27 @@ async function submitMaintenanceLog() {
             showToast("Reporte enviado exitosamente", "success");
             taskBatch = [];
             renderTaskBatch();
+            // Process queue just in case there are stuck items
+            processOfflineQueue();
         } else {
-            showToast("Error: " + (result.message || "Desconocido"), "error");
+            showToast("Error del Servidor: " + (result.message || "Desconocido"), "error");
         }
     } catch (e) {
-        showToast("Error de conexión", "error");
+        // Fallback robusto si fetch falla (ej: mala red pero JS cree que onLine = true)
+        saveToOfflineQueue(payload);
+        showToast("Sin internet al servidor. Reporte directo a cola offline.", "warning");
+        taskBatch = [];
+        renderTaskBatch();
     } finally {
-        isSubmitting = false;
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<span class="material-icons-round">send</span> ENVIAR REPORTE';
-        }
+        resetSubmitBtn(submitBtn);
+    }
+}
+
+function resetSubmitBtn(submitBtn) {
+    isSubmitting = false;
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span class="material-icons-round">send</span> Enviar Reporte';
     }
 }
 
@@ -232,6 +249,24 @@ function closeHistoryModal() {
 
 async function loadHistory() {
     const list = document.getElementById('history-list');
+
+    // Si estás offline, mostramos un resumen local en vez de conectar al servidor
+    if (!navigator.onLine) {
+        const qs = getOfflineQueue();
+        if (qs.length > 0) {
+            list.innerHTML = `<div style="text-align:center; padding:10px; color:var(--text-light); font-size: 0.8rem;">Estás offline. Tienes ${qs.length} reportes en cola local listos para enviarse al reconectar.</div>`;
+            renderHistory(qs.map((p, i) => ({
+                id: `COLA-${i + 1}`,
+                date: p.fecha_trabajo || new Date().toISOString().split('T')[0],
+                worker: p.worker,
+                task: p.tasks.join(', ')
+            })));
+        } else {
+            list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-light);">Estás offline. No hay registros pendientes en cola.</div>';
+        }
+        return;
+    }
+
     list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-light);">Cargando...</div>';
 
     try {
@@ -243,7 +278,7 @@ async function loadHistory() {
             list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--danger);">Error: ${result.message}</div>`;
         }
     } catch (e) {
-        list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--danger);">Error de conexión</div>`;
+        list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--danger);">Error de conexión intentelo de nuevo</div>`;
     }
 }
 
@@ -347,3 +382,97 @@ async function exportPDF() {
     doc.save("bitacora_mantencion_rahue.pdf");
     showToast("PDF Descargado", "success");
 }
+
+/**
+ * OFFLINE QUEUE LOGIC
+ */
+const OFFLINE_QUEUE_KEY = 'maint_offline_queue_rahue';
+
+function getOfflineQueue() {
+    const q = localStorage.getItem(OFFLINE_QUEUE_KEY);
+    return q ? JSON.parse(q) : [];
+}
+
+function saveToOfflineQueue(payload) {
+    const q = getOfflineQueue();
+    q.push(payload);
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q));
+    updateOfflineBadge();
+}
+
+function clearOfflineQueue() {
+    localStorage.removeItem(OFFLINE_QUEUE_KEY);
+    updateOfflineBadge();
+}
+
+async function processOfflineQueue() {
+    if (!navigator.onLine) return;
+    const q = getOfflineQueue();
+    if (q.length === 0) return;
+
+    showToast(`Sincronizando ${q.length} registros en cola local...`, 'info');
+
+    // Process queue sequentially
+    const remaining = [];
+    for (const payload of q) {
+        try {
+            const result = await sendTransaction(payload);
+            if (!result || result.status !== 'success') {
+                remaining.push(payload);
+            }
+        } catch (e) {
+            remaining.push(payload); // Network failed again
+        }
+    }
+
+    if (remaining.length < q.length) {
+        showToast(`Se sincronizaron ${q.length - remaining.length} reporte(s) al servidor`, 'success');
+    }
+
+    if (remaining.length === 0) {
+        clearOfflineQueue();
+    } else {
+        localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remaining));
+        updateOfflineBadge();
+    }
+}
+
+function updateOfflineBadge() {
+    const q = getOfflineQueue();
+    let badge = document.getElementById('offline-badge-rahue');
+    if (q.length > 0) {
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.id = 'offline-badge-rahue';
+            badge.style.position = 'fixed';
+            badge.style.bottom = '20px';
+            badge.style.left = '50%';
+            badge.style.transform = 'translateX(-50%)';
+            badge.style.background = '#f59e0b';
+            badge.style.color = '#fff';
+            badge.style.padding = '8px 18px';
+            badge.style.borderRadius = '30px';
+            badge.style.fontSize = '0.8rem';
+            badge.style.fontWeight = '600';
+            badge.style.boxShadow = '0 6px 16px rgba(0,0,0,0.3)';
+            badge.style.zIndex = '9999';
+            badge.style.pointerEvents = 'none';
+            document.body.appendChild(badge);
+        }
+        badge.innerHTML = `<span class="material-icons-round" style="font-size:16px;vertical-align:-3px;margin-right:6px;">cloud_off</span>${q.length} pend. sin conexión`;
+    } else if (badge) {
+        badge.remove();
+    }
+}
+
+// Global Online reconnexion listener
+window.addEventListener('online', () => {
+    showToast("Conexión a internet restaurada", "success");
+    processOfflineQueue();
+});
+
+// Check on boot
+document.addEventListener('DOMContentLoaded', () => {
+    updateOfflineBadge();
+    setTimeout(processOfflineQueue, 1500); // Check 1.5 seconds after loading
+});

@@ -3,7 +3,7 @@
  */
 const CONFIG = {
     // PEGA AQUÍ EL LINK INDEPENDIENTE DE LA APP SCRIPT PARA EL CENTRO RAHUE
-    API_URL: 'https://script.google.com/macros/s/AKfycbyr7rw4orxhBhbaJ6z9kdPZeOMV8M8O6qOmsdJDR1D30SWrFXjfAH4QIj9qO9ehbtDf/exec',
+    API_URL: 'https://script.google.com/macros/s/AKfycbxREgx9mm2CUpM2tlOfAYWjw0IcHCfSnEFY17G9YfPfdh1kCAcVwNoUvqRiNuXEfmpm/exec',
 };
 
 // Initialize

@@ -23,6 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const dd = String(today.getDate()).padStart(2, '0');
         fechaInput.value = `${yyyy}-${mm}-${dd}`;
     }
+
+    // Hide install button immediately if app is already running in standalone mode (installed PWA)
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+        const installBtn = document.getElementById('btn-install-pwa');
+        if (installBtn) installBtn.style.display = 'none';
+    }
 });
 
 /**
@@ -475,4 +481,49 @@ window.addEventListener('online', () => {
 document.addEventListener('DOMContentLoaded', () => {
     updateOfflineBadge();
     setTimeout(processOfflineQueue, 1500); // Check 1.5 seconds after loading
+});
+
+/**
+ * PWA INSTALLATION LOGIC
+ */
+let deferredPrompt;
+
+// Escuchar evento para capturar prompt de instalación
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+
+    // Solo mostrar el botón si NO estamos en standalone
+    if (!window.matchMedia('(display-mode: standalone)').matches && window.navigator.standalone !== true) {
+        const installBtn = document.getElementById('btn-install-pwa');
+        if (installBtn) {
+            installBtn.style.display = 'flex';
+        }
+    }
+});
+
+// Función lanzada por el clic en el botón
+async function installPWA() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            console.log('El usuario aceptó instalar la PWA');
+            const installBtn = document.getElementById('btn-install-pwa');
+            if (installBtn) installBtn.style.display = 'none'; // ocultar tras instalar
+        } else {
+            console.log('El usuario rechazó instalar la PWA');
+        }
+        deferredPrompt = null;
+    }
+}
+
+// Ocultar si se instala exitosamente mediante otro medio (ej: barra del navegador)
+window.addEventListener('appinstalled', () => {
+    const installBtn = document.getElementById('btn-install-pwa');
+    if (installBtn) installBtn.style.display = 'none';
+    deferredPrompt = null;
+    console.log('PWA was installed');
 });

@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bitácora Mantención Rahue - Cermaq</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <!-- Si vas a crear un CSS nuevo, actualiza este link. Si copias el original, déjalo igual -->
+    <link rel="stylesheet" href="cermaq-style.css?v=11.1-ULTRA">
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bitácora Rahue">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="bitacora_mantencion.js?v=1.4" defer></script>
+
+    <style>
+        /* =============================================
+           BITÁCORA — HERO BANNER v3  (clean rewrite)
+        ============================================= */
+
+        /* ---- HERO: always dark regardless of page theme ---- */
+        .bit-hero {
+            position: relative;
+            width: 100%;
+            background: #000;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2.6rem 1.4rem 2.2rem;
+            box-sizing: border-box;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 4px 40px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Particles canvas scoped to the banner */
+        #hero-particles {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Light beam behind the logo */
+        .bit-hero-beam {
+            position: absolute;
+            top: -70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 360px;
+            height: 280px;
+            background: radial-gradient(ellipse at 50% 0%,
+                    rgba(255, 255, 255, 0.14) 0%,
+                    rgba(255, 255, 255, 0.04) 45%,
+                    transparent 70%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Content centred above canvas */
+        .bit-hero-body {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 13px;
+        }
+
+        /* White glowing logo */
+        .bit-hero-logo {
+            height: 46px;
+            width: auto;
+            object-fit: contain;
+            filter: brightness(0) invert(1) drop-shadow(0 0 18px rgba(255, 255, 255, 0.4)) drop-shadow(0 0 6px rgba(255, 255, 255, 0.7));
+            animation: logo-glow 4s ease-in-out infinite;
+        }
+
+        @keyframes logo-glow {
+
+            0%,
+            100% {
+                filter: brightness(0) invert(1) drop-shadow(0 0 12px rgba(255, 255, 255, 0.28)) drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
+            }
+
+            50% {
+                filter: brightness(0) invert(1) drop-shadow(0 0 28px rgba(255, 255, 255, 0.60)) drop-shadow(0 0 12px rgba(255, 255, 255, 0.90));
+            }
+        }
+
+        /* Thin hairline rule */
+        .bit-hero-rule {
+            width: 28px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.18);
+            border-radius: 1px;
+        }
+
+        /* Subtitle */
+        .bit-hero-title {
+            font-size: 0.82rem;
+            font-weight: 300;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: #fff;
+            opacity: 0.80;
+            margin: 0;
+            text-align: center;
+        }
+
+        /* Action buttons — fixed white contrast regardless of theme  */
+        .bit-hero-actions {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 3;
+            display: flex;
+            gap: 6px;
+        }
+
+        .bit-icon-btn {
+            height: 32px;
+            padding: 0 11px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease;
+            /* colour hardcoded white — never inherits page theme */
+            color: rgba(255, 255, 255, 0.75) !important;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        .bit-icon-btn:hover {
+            background: rgba(255, 255, 255, 0.17);
+            color: #fff !important;
+            border-color: rgba(255, 255, 255, 0.38);
+        }
+
+        .bit-icon-btn .material-icons-round {
+            font-size: 16px;
+            color: inherit !important;
+        }
+
+        .bit-btn-label {
+            display: none;
+        }
+
+        @media (min-width: 380px) {
+            .bit-btn-label {
+                display: inline;
+            }
+        }
+
+        /* ---- PAGE BODY ---- */
+        .bit-main {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 1.8rem 1.2rem 6rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        /* Page subtitle */
+        .bit-page-title {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .bit-page-title h1 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0 0 4px;
+            letter-spacing: 0.02em;
+        }
+
+        .bit-page-title p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        /* ---- STEP ---- */
+        .bit-step {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 1.4rem;
+            align-items: flex-start;
+        }
+
+        .bit-step-num {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+            box-shadow: 0 0 12px rgba(0, 169, 224, 0.3);
+        }
+
+        .bit-step-body {
+            flex: 1;
+        }
+
+        .bit-step-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        /* ---- INPUTS ---- */
+        .bit-input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            font-size: 0.95rem;
+            font-family: inherit;
+            font-weight: 500;
+            color: var(--text-main);
+            background: var(--glass-surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+            backdrop-filter: blur(10px);
+        }
+
+        [data-theme="light"] .bit-input {
+            background: #fff;
+            border-color: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .bit-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 169, 224, 0.12);
+        }
+
+        .bit-input::placeholder {
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        input[type="date"].bit-input {
+            color-scheme: dark;
+        }
+
+        [data-theme="light"] input[type="date"].bit-input {
+            color-scheme: light;
+        }
+
+        .bit-hint {
+            font-size: 0.73rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            display: block;
+        }
+
+        /* ---- TASK ROW ---- */
+        .bit-task-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .bit-task-row .bit-input {
+            flex: 1;
+        }
+
+        .bit-add-btn {
+            width: 46px;
+            height: 46px;
+            flex-shrink: 0;
+            border-radius: 12px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(0, 169, 224, 0.3);
+        }
+
+        .bit-add-btn:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .bit-add-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* ---- BATCH ---- */
+        #maint-batch-list {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .batch-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 9px 12px;
+            border-radius: 10px;
+            background: rgba(0, 169, 224, 0.06);
+            border: 1px solid rgba(0, 169, 224, 0.15);
+        }
+
+        [data-theme="light"] .batch-item {
+            background: #f0f9ff;
+            border-color: #bae6fd;
+        }
+
+        .batch-item span {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .batch-remove-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 0;
+            display: flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+
+        .batch-remove-btn:hover {
+            color: #ef4444;
+        }
+
+        .batch-remove-btn .material-icons-round {
+            font-size: 18px;
+        }
+
+        /* ---- DIVIDER ---- */
+        .bit-divider {
+            height: 1px;
+            background: var(--glass-border);
+            margin: 0.8rem 0 1.6rem 42px;
+        }
+
+        /* ---- ACTIONS ---- */
+        .bit-actions {
+            margin-top: 0.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .bit-btn-primary {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 16px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.25s ease;
+            box-shadow: 0 8px 24px rgba(0, 169, 224, 0.25);
+        }
+
+        .bit-btn-primary:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 12px 28px rgba(0, 169, 224, 0.35);
+        }
+
+        .bit-btn-primary:active {
+            transform: translateY(1px);
+        }
+
+        .bit-btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .bit-btn-ghost {
+            width: 100%;
+            padding: 0.85rem;
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .bit-btn-ghost:hover {
+            background: var(--btn-hover-bg);
+            color: var(--text-main);
+            border-color: var(--btn-hover-border);
+        }
+
+        /* ---- MODAL ---- */
+        #modal-history {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.52);
+            backdrop-filter: blur(6px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .bit-modal-sheet {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            height: 82vh;
+            background: var(--glass-surface);
+            backdrop-filter: blur(24px);
+            border-radius: 24px 24px 0 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        [data-theme="light"] .bit-modal-sheet {
+            background: #fff;
+        }
+
+        .bit-modal-handle {
+            width: 36px;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--glass-border);
+            margin: 0 auto 16px;
+        }
+
+        .bit-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .bit-modal-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        .bit-modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+
+        .bit-modal-close:hover {
+            color: var(--text-main);
+        }
+
+        .bit-modal-toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .bit-modal-toolbar button {
+            flex: 1;
+            padding: 0.65rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .bit-modal-toolbar .btn-pdf {
+            background: transparent;
+            border: 1px solid rgba(220, 38, 38, 0.4);
+            color: #ef4444;
+        }
+
+        .bit-modal-toolbar .btn-pdf:hover {
+            background: rgba(220, 38, 38, 0.08);
+        }
+
+        .bit-modal-toolbar .btn-refresh {
+            background: var(--primary);
+            border: none;
+            color: #fff;
+        }
+
+        .bit-modal-toolbar .btn-refresh:hover {
+            background: var(--primary-dark);
+        }
+
+        #history-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spin {
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Page-level bg particles (light/dark aware) -->
+    <canvas id="bg-particles"
+        style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.5;"></canvas>
+
+    <!-- ===== HERO BANNER (always black) ===== -->
+    <header class="bit-hero">
+        <!-- Banner particles -->
+        <canvas id="hero-particles"></canvas>
+
+        <!-- Light beam -->
+        <div class="bit-hero-beam"></div>
+
+        <!-- Action buttons — white contrast always -->
+        <div class="bit-hero-actions">
+            <button class="bit-icon-btn" onclick="openSheet()" title="Abrir Planilla">
+                <span class="material-icons-round">table_view</span>
+                <span class="bit-btn-label">Planilla</span>
+            </button>
+            <button class="bit-icon-btn" onclick="toggleTheme()" id="btn-theme-toggle" title="Cambiar Tema">
+                <span class="material-icons-round">dark_mode</span>
+            </button>
+            <button class="bit-icon-btn" onclick="window.location.href='index.html'" title="Volver">
+                <span class="material-icons-round">arrow_back</span>
+                <span class="bit-btn-label">Volver</span>
+            </button>
+        </div>
+
+        <!-- Logo + title -->
+        <div class="bit-hero-body">
+            <!-- Si tienes otro logo para Rahue, cámbialo aquí -->
+            <img src="Cermaq_logo2.png" alt="Cermaq Rahue" class="bit-hero-logo" onerror="this.style.display='none';">
+            <div class="bit-hero-rule"></div>
+            <p class="bit-hero-title">Bitácora Mantención Rahue</p>
+        </div>
+    </header>
+
+    <!-- Theme Init -->
+    <script>
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        window.addEventListener('DOMContentLoaded', () => {
+            const icon = document.getElementById('btn-theme-toggle').querySelector('span');
+            icon.innerText = savedTheme === 'dark' ? 'light_mode' : 'dark_mode';
+        });
+    </script>
+
+    <!-- ===== MAIN ===== -->
+    <main class="bit-main" style="padding-bottom: 80px;">
+
+        <div class="bit-page-title">
+            <h1>Registro de Actividades - Rahue</h1>
+            <p>Completa los campos y envía tu reporte diario</p>
+        </div>
+
+        <!-- Step 1 -->
+        <div class="bit-step">
+            <div class="bit-step-num">1</div>
+            <div class="bit-step-body">
+                <span class="bit-step-label">Técnico / Responsable</span>
+                <input type="text" id="maint-worker" class="bit-input" placeholder="Tu nombre completo">
+            </div>
+        </div>
+
+        <div class="bit-divider"></div>
+
+        <!-- Step 2 -->
+        <div class="bit-step">
+            <div class="bit-step-num">2</div>
+            <div class="bit-step-body">
+                <span class="bit-step-label">Fecha de Trabajo</span>
+                <input type="date" id="maint-fecha" class="bit-input">
+                <span class="bit-hint">Puedes seleccionar una fecha anterior para registrar tareas de días pasados.</span>
+            </div>
+        </div>
+
+        <div class="bit-divider"></div>
+
+        <!-- Step 3 -->
+        <div class="bit-step">
+            <div class="bit-step-num">3</div>
+            <div class="bit-step-body">
+                <span class="bit-step-label">Tareas Realizadas</span>
+                <div class="bit-task-row">
+                    <input type="text" id="maint-task" class="bit-input" placeholder="Describe la actividad...">
+                    <button class="bit-add-btn" onclick="addTaskToBatch()" title="Agregar tarea">
+                        <span class="material-icons-round">add</span>
+                    </button>
+                </div>
+                <div id="maint-batch-list"></div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="bit-actions" style="margin-top: 1.6rem;">
+            <button class="bit-btn-primary" id="btn-maint-submit" onclick="submitMaintenanceLog()">
+                <span class="material-icons-round">send</span> Enviar Reporte
+            </button>
+            <button class="bit-btn-ghost" onclick="openHistoryModal()">
+                <span class="material-icons-round">history</span> Ver Historial
+            </button>
+        </div>
+
+    </main>
+
+    <!-- ===== HISTORY MODAL ===== -->
+    <div id="modal-history">
+        <div class="bit-modal-sheet">
+            <div class="bit-modal-handle"></div>
+            <div class="bit-modal-header">
+                <h2>Historial Reciente</h2>
+                <button class="bit-modal-close" onclick="closeHistoryModal()">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="bit-modal-toolbar">
+                <button class="btn-pdf" onclick="exportPDF()">
+                    <span class="material-icons-round">picture_as_pdf</span> PDF
+                </button>
+                <button class="btn-refresh" onclick="loadHistory()">
+                    <span class="material-icons-round">refresh</span> Actualizar
+                </button>
+            </div>
+            <div id="history-list">
+                <div style="text-align:center;padding:20px;color:var(--text-muted);">Cargando historial...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script>
+        // ---- Banner particles (always white dots on black) ----
+        (function () {
+            const canvas = document.getElementById('hero-particles');
+            const ctx = canvas.getContext('2d');
+            let pts = [];
+
+            function resize() {
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const N = 38;
+            for (let i = 0; i < N; i++) {
+                pts.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 0.28,
+                    vy: (Math.random() - 0.5) * 0.28,
+                    r: Math.random() * 1.5 + 0.5
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'rgba(255,255,255,0.35)';
+                for (const p of pts) {
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0) p.x = canvas.width;
+                    if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height;
+                    if (p.y > canvas.height) p.y = 0;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        // ---- Page bg particles (theme-aware) ----
+        (function () {
+            const canvas = document.getElementById('bg-particles');
+            const ctx = canvas.getContext('2d', { alpha: true });
+            let pts = [];
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const N = window.innerWidth < 768 ? 18 : 35;
+            for (let i = 0; i < N; i++) {
+                pts.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 0.25,
+                    vy: (Math.random() - 0.5) * 0.25,
+                    r: Math.random() * 1.8 + 0.6
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+                ctx.fillStyle = dark ? 'rgba(255,255,255,0.28)' : 'rgba(15,23,42,0.18)';
+                for (const p of pts) {
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0) p.x = canvas.width;
+                    if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height;
+                    if (p.y > canvas.height) p.y = 0;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+    </script>
+</body>
+
+</html>

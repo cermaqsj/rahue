@@ -3,7 +3,7 @@
  */
 const CONFIG = {
     // PEGA AQUÍ EL LINK INDEPENDIENTE DE LA APP SCRIPT PARA EL CENTRO RAHUE
-    API_URL: 'PEGAR_AQUI',
+    API_URL: 'https://script.google.com/macros/s/AKfycbwb3rLSUXf3rl373tAthKAOX259UBqSFFwpJOXHgTdVFLfRwPQ3sUIHPGh8zHeRqTw/exec',
 };
 
 // Initialize
@@ -212,8 +212,8 @@ async function submitMaintenanceLog() {
 
 function openSheet() {
     // PEGA AQUÍ EL LINK DE TU NUEVA HOJA DE GOOGLE SHEETS PARA RAHUE
-    const sheetUrl = 'PEGAR_AQUI_LINK_DE_LA_NUEVA_HOJA';
-    
+    const sheetUrl = 'https://docs.google.com/spreadsheets/d/1ahgD4zXAl86JvT5F0PQIfUIzvX54L1ZFgrAacd-lcAw/edit?usp=sharing';
+
     if (sheetUrl === 'PEGAR_AQUI_LINK_DE_LA_NUEVA_HOJA') {
         alert("Falta configurar el enlace de la hoja de Google Sheets para Rahue en bitacora_mantencion.js (función openSheet)");
     } else {
